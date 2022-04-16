@@ -3,13 +3,25 @@
 This is a demo Flutter application that allows a user to track daily steps using the Flutter Pedometer plugin (https://pub.dev/packages/pedometer).
 
 ## How to run the app
-Open the project in Android Studio then run the command below to install project dependencies.
+Open the project in Android Studio then run the command below to install project dependencies from the terminal.
 
 ```bash
   flutter pub get
 ```
 
-After installing the dependencies you can now run in Android studio.dependencies
+After installing the dependencies you can now run the app in Android studio or through the terminal by executing the following command from the project root directory:
+
+```bash
+ flutter run lib/main.dart
+```
+
+## Running Tests
+
+Execute the following command to run the smoke test
+
+```bash
+  flutter test
+```
 
 ## Using the app.
 
@@ -21,6 +33,6 @@ You will see the app update the button at the center of the screen with your lat
 
 ![App Screenshot](/images/app_screenshot.png)
 
-Click the button at the center of the screen to save you steps.
+Click the button at the center of the screen to save your steps.
 
 After clicking the button on the screen to bank the steps, you can find the list of the stored records here by calling this API: https://step-banker-lite.herokuapp.com/api/v1/users/steps
