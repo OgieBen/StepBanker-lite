@@ -7,24 +7,40 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:step_banker_lite/data/datasource/local/local_data_source.dart';
+import 'package:step_banker_lite/data/datasource/remote/remote_data_source.dart';
+import 'package:step_banker_lite/data/local_storage/shared_preferences.dart';
+import 'package:step_banker_lite/data/repo/step/step_repository.dart';
+import 'package:step_banker_lite/data/repo/user_repository.dart';
 
 import 'package:step_banker_lite/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('Render smoke test for the UI', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    final pref = SharedPreferencesHelper();
+    await tester.pumpWidget(MaterialApp(
+      title: 'StepBanker',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      debugShowCheckedModeBanner: false,
+      home: MyHomePage(
+        title: 'StepBanker',
+        userRepository: UserRepository(pref),
+        stepRepository:
+            StepRepository(LocalDataSource(pref), RemoteDataSource()),
+      ),
+    ));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Verify that our UI is rendered correctly.
+    expect(find.text('StepBanker-lite'), findsOneWidget);
+    expect(find.text('0'), findsNWidgets(2));
+    expect(find.text('Steps'), findsOneWidget);
+    expect(find.text('Banked Steps'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    // Tap the 'RoundedButton'
+    await tester.tap(find.byType(InkWell));
     await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
   });
 }

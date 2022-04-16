@@ -25,20 +25,33 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pref = SharedPreferencesHelper();
     return MaterialApp(
       title: 'StepBanker',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
       debugShowCheckedModeBanner: false,
-      home: const MyHomePage(title: 'StepBanker'),
+      home: MyHomePage(
+        title: 'StepBanker',
+        userRepository: UserRepository(pref),
+        stepRepository:
+            StepRepository(LocalDataSource(pref), RemoteDataSource()),
+      ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  MyHomePage(
+      {Key? key,
+      required this.title,
+      required this.stepRepository,
+      required this.userRepository})
+      : super(key: key);
   final String title;
+  final StepRepository stepRepository;
+  final UserRepository userRepository;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -55,15 +68,49 @@ class _MyHomePageState extends State<MyHomePage> {
   int _lockedInitialStepsSinceMidnight = 0;
   var _resetLockedISSM = false;
 
-  late StepRepository _repository;
-  late SharedPreferencesHelper _pref;
-  late String _userId;
+  late final StepRepository _repository = widget.stepRepository;
+  String _userId = "";
 
   @override
   void initState() {
     super.initState();
     _setup();
     _initPedometer();
+  }
+
+  _setup() async {
+    final userRepo = widget.userRepository;
+    final uid = await userRepo.initUserId();
+    if (uid == null) {
+      throw FlutterError("User ID must be initialised");
+    }
+    _userId = uid;
+    _checkPreviousTimeStamp();
+
+    if (!_resetLockedISSM) {
+      final activeStepRequest =
+          await _repository.fetchUserActiveSteps(StepRequest(User(_userId)));
+      _activeSteps = activeStepRequest?.steps ?? 0;
+      final bankedStepRequest =
+          await _repository.fetchBankedSteps(StepRequest(User(_userId)));
+      final totalStepForTheDay =
+          await _repository.getTotalStepsForTheDay(StepRequest(User(_userId)));
+
+      setState(() {
+        _bankedSteps = bankedStepRequest?.steps ?? 0;
+        _currentStepsForTheDay = totalStepForTheDay?.steps ?? 0;
+        _previousStepsForTheDay = totalStepForTheDay?.steps ?? 0;
+      });
+    } else {
+      final bankedStepRequest =
+          await _repository.fetchBankedSteps(StepRequest(User(_userId)));
+      setState(() {
+        _bankedSteps = bankedStepRequest?.steps ?? 0;
+      });
+    }
+
+    Fimber.d(
+        "User ID ----- $_userId --- banked steps: $_bankedSteps ---- Previous Active steps: $_activeSteps Current TSFD: $_currentStepsForTheDay");
   }
 
   _checkPreviousTimeStamp() async {
@@ -119,7 +166,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     setState(() {
       _currentStepsForTheDay = res?.steps ?? 0;
-      _previousStepsForTheDay = res?.steps ?? 0;
+      _previousStepsForTheDay = 0;
     });
   }
 
@@ -134,34 +181,6 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _activeSteps = res?.steps ?? 0;
     });
-  }
-
-  _setup() async {
-    _pref = SharedPreferencesHelper();
-    final userRepo = UserRepository(_pref);
-    final uid = await userRepo.initUserId();
-    if (uid == null) {
-      throw FlutterError("User ID must be initialised");
-    }
-    _userId = uid;
-    _repository = StepRepository(LocalDataSource(_pref), RemoteDataSource());
-
-    _checkPreviousTimeStamp();
-
-    final activeStepRequest =
-        await _repository.fetchUserActiveSteps(StepRequest(User(_userId)));
-    _activeSteps = activeStepRequest?.steps ?? 0;
-    final bankedStepRequest =
-        await _repository.fetchBankedSteps(StepRequest(User(_userId)));
-    final totalStepForTheDay =
-        await _repository.getTotalStepsForTheDay(StepRequest(User(_userId)));
-
-    setState(() {
-      _bankedSteps = bankedStepRequest?.steps ?? 0;
-      _currentStepsForTheDay = totalStepForTheDay?.steps ?? 0;
-    });
-    Fimber.d(
-        "User ID ----- $_userId --- banked steps: $_bankedSteps ---- Previous Active steps: $_activeSteps Current TSFD: $_currentStepsForTheDay");
   }
 
   void _onStepCount(StepCount event) {
@@ -191,12 +210,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _onPedestrianStatusChanged(PedestrianStatus event) async {
-    if(event.status == "walking"){
+    if (event.status == "walking") {
       _checkPreviousTimeStamp();
     }
 
     if (event.status == "stopped") {
       final activeSteps = _currentStepsForTheDay - _previousStepsForTheDay;
+      Fimber.d("Active Step Diff: $_currentStepsForTheDay - $_previousStepsForTheDay = $activeSteps");
       final res = await _repository.updateUserActiveSteps(UpdateStepRequest(
           User(_userId),
           ActiveSteps(
