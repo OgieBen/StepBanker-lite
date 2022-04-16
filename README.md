@@ -22,3 +22,5 @@ You will see the app update the button at the center of the screen with your lat
 ![App Screenshot](/images/app_screenshot.png)
 
 Click the button at the center of the screen to save you steps.
+
+After clicking the button on the screen to bank the steps, you can find the list of the stored records here by calling this API: https://step-banker-lite.herokuapp.com/api/v1/users/steps

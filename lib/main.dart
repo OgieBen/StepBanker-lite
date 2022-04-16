@@ -80,7 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
       Fimber.d(
           "Timestamp Log: OldTS: ${oldTimeStamp.hour} Diff: ${diff.inHours} HoursToMidnight: $hoursToMN Current hour: ${currentTime.hour}");
 
-      if (diff.inDays >= 1) {
+      if (diff.inDays >= 1 || diff.inHours < 0) {
         Fimber.d(
             "Timestamp is older than one day: Reset total steps for the day");
         _resetLockedISSM = true;
@@ -108,6 +108,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _resetTotalStepsForTheDay() async {
+    _currentStepsForTheDay = 0;
+    _previousStepsForTheDay = 0;
     final res = await _repository.resetTotalStepsForTheDay(UpdateStepRequest(
         User(_userId),
         ActiveSteps(
@@ -117,10 +119,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
     setState(() {
       _currentStepsForTheDay = res?.steps ?? 0;
+      _previousStepsForTheDay = res?.steps ?? 0;
     });
   }
 
   Future<void> _resetActiveSteps() async {
+    _activeSteps = 0;
     final res = await _repository.resetUserActiveSteps(UpdateStepRequest(
         User(_userId),
         ActiveSteps(
@@ -187,6 +191,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _onPedestrianStatusChanged(PedestrianStatus event) async {
+    if(event.status == "walking"){
+      _checkPreviousTimeStamp();
+    }
+
     if (event.status == "stopped") {
       final activeSteps = _currentStepsForTheDay - _previousStepsForTheDay;
       final res = await _repository.updateUserActiveSteps(UpdateStepRequest(
