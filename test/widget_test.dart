@@ -14,6 +14,7 @@ import 'package:step_banker_lite/data/repo/step/step_repository.dart';
 import 'package:step_banker_lite/data/repo/user_repository.dart';
 
 import 'package:step_banker_lite/main.dart';
+import 'package:step_banker_lite/ui/home/home_page.dart';
 
 void main() {
   testWidgets('Render smoke test for the UI', (WidgetTester tester) async {
