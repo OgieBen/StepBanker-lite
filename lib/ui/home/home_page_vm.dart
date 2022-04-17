@@ -48,7 +48,7 @@ class HomePageVM {
       throw FlutterError("User ID must be initialised");
     }
     _userId = uid;
-    checkPreviousTimeStamp();
+    _checkPreviousTimeStamp();
 
     if (!_resetLockedISSM) {
       final activeStepRequest =
@@ -76,7 +76,7 @@ class HomePageVM {
         "User ID ----- $_userId --- banked steps: $_bankedSteps ---- Previous Active steps: $_activeSteps Current TSFD: $_currentStepsForTheDay");
   }
 
-  checkPreviousTimeStamp() async {
+  _checkPreviousTimeStamp() async {
     final timestamp = await _repository.getLastStepTimestamp();
     // final timestamp = "2022-04-12T21:50:12.636411";
     Fimber.d("Timestamp for last entry: $timestamp");
@@ -174,7 +174,7 @@ class HomePageVM {
 
   Future<void> _onPedestrianStatusChanged(PedestrianStatus event) async {
     if (event.status == "walking") {
-      checkPreviousTimeStamp();
+      _checkPreviousTimeStamp();
     }
 
     if (event.status == "stopped") {
