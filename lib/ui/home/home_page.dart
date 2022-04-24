@@ -54,7 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             RoundedButton(
               onTap: _homePageVM.onBankSteps,
-              currentStepsForTheDay: _homePageVM.currentStepsForTheDay,
+              currentStepsForTheDay: _homePageVM.activeSteps,
             ),
             const Spacer(
               flex: 2,

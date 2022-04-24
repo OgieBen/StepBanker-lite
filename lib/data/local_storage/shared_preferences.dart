@@ -49,10 +49,7 @@ class SharedPreferencesHelper {
   updateActiveSteps(int newActiveSteps) async {
     SharedPreferences? _pref = await SharedPreferences.getInstance();
     Fimber.d("New Active steps update - $newActiveSteps");
-    var oldActiveSteps = _pref.getInt("activeSteps") ?? 0;
-    int sum = newActiveSteps + oldActiveSteps;
-    await _pref.setInt("activeSteps", sum);
-    Fimber.d("Active steps update - $sum");
+    await _pref.setInt("activeSteps", newActiveSteps);
     return _pref.getInt("activeSteps");
   }
 

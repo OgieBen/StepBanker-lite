@@ -34,6 +34,8 @@ class HomePageVM {
 
   int get bankedSteps => _bankedSteps;
 
+  int get activeSteps => _activeSteps;
+
   setVmUpdate(Function setState) {
     _setState = setState;
   }
@@ -163,10 +165,23 @@ class HomePageVM {
     // Update _currentStepsForTheDay when the user starts walking.
     if (event.steps > _lockedInitialStepsSinceMidnight) {
       final newSteps = event.steps - _lockedInitialStepsSinceMidnight;
-      Fimber.d(
-          "Newly generated steps: $newSteps/ Total steps: ${event.steps} / Locked steps:  $_lockedInitialStepsSinceMidnight");
+      int activeStepCount = 0;
+      if(_currentStepsForTheDay > 0){
+        activeStepCount = newSteps - _currentStepsForTheDay;
+      }else{
+        activeStepCount = newSteps;
+      }
+      int newActiveStep = _activeSteps + activeStepCount;
+      Fimber.d("Newly generated steps: $newSteps/ Total steps: ${event.steps} / Locked steps:  $_lockedInitialStepsSinceMidnight / Newly generated active steps: $newActiveStep");
+       _repository.updateUserActiveSteps(UpdateStepRequest(
+          User(_userId),
+          ActiveSteps(
+            newActiveStep,
+            "",
+          )));
       _setState!(() {
         _currentStepsForTheDay = newSteps;
+        _activeSteps = newActiveStep;
       });
       return;
     }
@@ -178,18 +193,6 @@ class HomePageVM {
     }
 
     if (event.status == "stopped") {
-      final activeSteps = _currentStepsForTheDay - _previousStepsForTheDay;
-      Fimber.d(
-          "Active Step Diff: $_currentStepsForTheDay - $_previousStepsForTheDay = $activeSteps");
-      final res = await _repository.updateUserActiveSteps(UpdateStepRequest(
-          User(_userId),
-          ActiveSteps(
-            activeSteps,
-            "",
-          )));
-      final updatedActiveValue = res?.steps ?? -1;
-      _previousStepsForTheDay = _currentStepsForTheDay;
-
       _repository.updateTotalStepsForTheDay(UpdateStepRequest(
           User(_userId),
           ActiveSteps(
@@ -197,9 +200,6 @@ class HomePageVM {
             "",
           )));
       _repository.recordLastStepTimestamp(event.timeStamp.toIso8601String());
-      _setState!(() {
-        _activeSteps = updatedActiveValue;
-      });
     }
     Fimber.d("$event");
   }
@@ -219,14 +219,14 @@ class HomePageVM {
         await _repository.fetchUserActiveSteps(StepRequest(User(_userId)));
     final activeSteps = activeStepReq?.steps ?? -1;
 
-    if (_activeSteps <= 0) {
+    if (activeSteps <= 0) {
       return;
     }
     final bankedStepsUpdateRes =
         await _repository.updateUserBankedSteps(UpdateStepRequest(
             User(_userId),
             ActiveSteps(
-              _activeSteps,
+              activeSteps,
               "",
             )));
     final bankedSteps = bankedStepsUpdateRes?.steps ?? -1;
